@@ -45,9 +45,11 @@ export default function NewCourse() {
         image:'',
         category:'',
         redirect:false,
-        error:''
-        
+        error:'' 
     })
+
+    const jwt = auth.isAuthenticated()
+    
     const handleChange = name => event => {
         const value = name === 'image'
             ? event.target.files[0]

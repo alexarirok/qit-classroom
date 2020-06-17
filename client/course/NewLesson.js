@@ -2,6 +2,8 @@ import React, { useState } from "react"
 import PropTypes from 'prop-types'
 import Add from '@material-ui/icons/AddBox'
 import { makeStyles, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from "@material-ui/core";
+import newLesson from './api-course'
+import auth from './../auth/auth-helper'
 
 const useStyles = makeStyles(theme => ({
     form: {
@@ -16,6 +18,32 @@ export default function NewLesson(props) {
         content:'',
         resource_url: ''
     })
+ 
+    const handleChange = name => {
+      setValues({...values, [name]: event.target.value })
+  }
+
+  const clickSubmit = () => {
+    const jwt = auth.isAuthenticated()
+    const lesson = {
+        title: values.title || undefined,
+        content: values.content || undefined,
+        resource_url: values.resource_url || undefined
+    }
+    newLesson({
+        courseId: props.courseId
+    }, {
+        t: jwt.token
+    }, lesson).then((data) => {
+        if (data && data.error) {
+            setValues({...values, error:data.error})
+        } else {
+            props.addLesson(data)
+            setValues({...values, title: '', content: '', resource_url:''})
+            setOpen(false)
+        }
+      })
+    }
     const handleClickOpen = () => {
         setOpen(true)
     }
@@ -24,31 +52,6 @@ export default function NewLesson(props) {
         setOpen(false)
     }
 
-    const handleChange = name => {
-        setValues({...values, [name]: event.target.value })
-    }
-
-    const clickSubmit = () => {
-        const jwt = auth.isAuthenticated()
-        const lesson = {
-            title: values.title || undefined,
-            content: values.content || undefined,
-            resource_url: values.resource_url || undefined
-        }
-        newLesson({
-            courseId: props.courseId
-        }, {
-            t: jwt.token
-        }, lesson).then((data) => {
-            if (data && data.error) {
-                setValues({...values, error:data.error})
-            } else {
-                props.addLesson(data)
-                setValues({...values, title: '', content: '', resource_url:''})
-                setOpen(false)
-            }
-        })
-    }
     return (
         <div>
           <Button aria-label="Add Lesson" color="primary" variant="contained" onClick={handleClickOpen}>

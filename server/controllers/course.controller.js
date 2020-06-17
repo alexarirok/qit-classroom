@@ -2,7 +2,7 @@ import dbErrorHandler from "../helpers/dbErrorHandler"
 import Course from '../models/course.model'
 import fs from 'fs'
 import formidable from 'formidable'
-import backgroundImage from './../../client/assets/images/background.jpeg'
+import defaultImage from './../../client/assets/images/default.png'
 import extend from "lodash/extend"
 
 
@@ -24,7 +24,7 @@ const create = (req, res) => {
         try {
             let result = await course.save()
             res.json(result)
-        }catch (err) {
+        } catch (err) {
             return res.status(400).json({
                 error: dbErrorHandler.getErrorMessage(err)
             })
@@ -32,36 +32,19 @@ const create = (req, res) => {
     })
 }
 
-const photo = (req, res, next) => {
-    if(req.course.image.data){
-        res.set("Content-Type", req.course.image.contenetType)
-        return res.send(req.course.image.data)
-    }
-    next()
-}
-const defaultPhoto = (req, res) => {
-    return res.sendFile(proces.cwd()+backgroundImage)
-}
-const listByInstructor = (req, res) => {
-    courseCtrl.find({instructor: req.profile._id}, (err, courses) => {
-        if (err) {
-            return res.status(400).json({
-                error: dbErrorHandler.getErrorMessage(err)
-            })
-        }
-        res.json(courses)
-    }).populate('instructor', '_id name')
-}
-
 const courseByID = async (req, res, next, id) => {
     try{
-        let course = await (await Course.findById(id)).populated('instructor', '_id name')
+        let course = await Course.findById(id).populate('instructor', '_id name')
         if (!course)
-            return res.status('400').json({error: "Course not found"})
+            return res.status('400').json({
+                error: "Course not found"
+            })
             req.course = course
             next()
     } catch (err) {
-        return res.status('400').json({error: "Could not retive course"})
+        return res.status('400').json({
+            error: "Could not retrieve course"
+        })
     }
 }
 
@@ -69,27 +52,13 @@ const read = (req, res) => {
     req.course.image = undefined
     return res.json(req.course)
 }
-
-const isInstructor = (req, res, next) => {
-    const isInstructor = req.course && req.auth && req.course.instructor._id == req.auth._id
-    if(!isInstructor) {
-        return res.status('403').json({
-            error: "User is not authorized"
-        })
-    } next ()
-}
-
-const newLesson = async (req, res) => {
+const list = async (req, res) => {
     try {
-        let lesson = req.body.lesson 
-        let result = await (await Course.findByIdAndUpdate(req.course._id, 
-            {$push: {lessons: lesson}, 
-            updated: Date.now()}, 
-            {new: true})).populated('instructor', '_id name').exec()
-        res.json(result)
+        let courses = await Course.find().select('name email updated created')
+        res.json(courses)
     } catch (err) {
         return res.status(400).json({
-            error: dbErrorHandler.getErrorMessage(err)
+            error: errorHandler.getErrorMessage(err)
         })
     }
 }
@@ -124,6 +93,18 @@ const update = (req, res) => {
     })
 }
 
+const newLesson = async (req, res) => {
+    try {
+        let lesson = req.body.lesson 
+        let result = await Course.findByIdAndUpdate(req.course._id, {$push: {lessons: lesson}, updated: Date.now()}, {new: true}).populate('instructor', '_id name').exec()
+        res.json(result)
+    } catch (err) {
+        return res.status(400).json({
+            error: dbErrorHandler.getErrorMessage(err)
+        })
+    }
+}
+
 const remove = async (req, res) => {
     try {
         let course = req.course
@@ -135,4 +116,47 @@ const remove = async (req, res) => {
         })
     }
 }
-export default { remove, update, create, photo, defaultPhoto, listByInstructor, read, courseByID, isInstructor, newLesson }
+
+const isInstructor = (req, res, next) => {
+    const isInstructor = req.course && req.auth && req.course.instructor._id == req.auth._id
+    if(!isInstructor) {
+        return res.status('403').json({
+            error: "User is not authorized"
+        })
+    } next ()
+}
+
+const listByInstructor = (req, res) => {
+    Course.find({instructor: req.profile._id}, (err, courses) => {
+        if (err) {
+            return res.status(400).json({
+                error: dbErrorHandler.getErrorMessage(err)
+            })
+        }
+        res.json(courses)
+    }).populate('instructor', '_id name')
+}
+
+const listPublished = (req, res) => {
+    Course.find({published: true}, (err, courses) => {
+        if (err) {
+            return res.status(400).json({
+                error: errorHandler.getErrorMessage(err)
+            })
+        }
+        res.json(courses)
+    }).populate('instructor', '_id name')
+}
+
+const photo = (req, res, next) => {
+    if(req.course.image.data){
+        res.set("Content-Type", req.course.image.contenetType)
+        return res.send(req.course.image.data)
+    }
+    next()
+}
+const defaultPhoto = (req, res) => {
+    return res.sendFile(proces.cwd()+backgroundImage)
+}
+
+export default { list, listPublished, remove, update, create, photo, defaultPhoto, listByInstructor, read, courseByID, isInstructor, newLesson }

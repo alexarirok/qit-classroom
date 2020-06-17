@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { read, update } from "../user/api-user";
+import update from './api-course.js'
+import read from './api-course.js'
 import { Card, Typography, IconButton, Button, CardHeader, CardMedia, ListItem, List, ListItemAvatar, Avatar, ListItemText, Dialog, DialogActions, DialogContent, DialogTitle, Divider } from "@material-ui/core";
 import PeopleIcon from '@material-ui/icons/Group'
 import Edit from '@material-ui/icons/Edit'
 import {makeStyles} from '@material-ui/core/styles'
-import { Link, Redirect } from "react-router-dom";
-import auth from "../auth/auth-helper";
-import { Stats } from "webpack";
+import { Link, Redirect } from "react-router-dom"
+import auth from "../auth/auth-helper"
 import NewLesson from './NewLesson'
-// import Enroll from './../enrollment/Enroll'
+import DeleteCourse from './DeleteCourse'
+import { enrollmentStats } from "../enrollment/api-enrollment";
+import Enroll from './../enrollment/Enroll'
 
 const useStyles = makeStyles(theme => ({
     root: theme.mixins.gutters({
@@ -85,6 +87,7 @@ export default function Course ({match}) {
     useEffect (() => {
         const abortController = new AbortController()
         const signal = abortController.signal
+
         read({courseId: match.params.courseId}, signal).then((data) => {
             if (data.error) {
                 setValues({...values, error: data.error})
@@ -96,20 +99,61 @@ export default function Course ({match}) {
             abortController.abort()
         }
     }, [match.params.courseId])
+    useEffect(() => {
+      const abortController = new AbortController()
+      const signal = abortController.signal
+
+      enrollmentStats({courseId: match.params.courseId}, {t: jwt.token}, signal).then((data) => {
+        if (data.error) {
+          setValues({...values, error: data.error})
+        } else {
+          setStats(data)
+        }
+      })
+      return function cleanup() {
+        abortController.abort()
+      }
+    }, [match.params.courseId])
+
+    const addLesson = (course) => {
+      setCourse(course)
+    }
+    const clickPublish = () => {
+      if(course.lessons.length > 0) {
+        setOpen(true)
+      }
+    }
+    const publish = () => {
+      let courseData = new FormData()
+          courseData.append('published', true)
+          update({
+              courseId: match.params.courseId
+          }, {
+              t: jwt.token
+          }, courseData).then((data) => {
+              if (data && data.error) {
+                  setValues({...values, error: data.error})
+              } else {
+                  setCourse({...course, published: true})
+                  setOpen(false)
+              }
+          })
+    }
+    
+    const handleClose = () => {
+      setOpen(false)
+    }
+    if (values.redirect) {
+      return (<Redirect to={'/teach/courses'}/>)
+    }
     const imageUrl = course._id
             ? `/api/courses/photo/$(course._id} ?${new Date().getTime()}`
             : '/api/courses/defaultphoto'
-
-    const addLesson = (course) => {
-        setCourse(course)
-    }
     return (
         <div className={classes.root}>
             <Card className={classes.Card}>
                 <CardHeader title={course.name} subheader={<div>
-                    <Link to={"/user/" + course.instructor._id} className={classes.sub}>
-                        By {course.instructor.name}
-                    </Link>
+                    <Link to={"/user/" + course.instructor._id} className={classes.sub}> By {course.instructor.name}</Link>
                     <span className={classes.category}>{course.category}</span>
                 </div>} 
                 action={<> 
@@ -123,18 +167,11 @@ export default function Course ({match}) {
                     {!course.published ? (<>
                     <Button color="secondary" variant="outlind" onClick={clickPublish}>{course.lessons.length === 0 ? "Add atleast 1 lesson to publish" : "Publish"}</Button>
                     <DeleteCourse course={course} onRemove={removeCourse} />
-                    </>) : (
-                        <Button color="primary" variant="outlined">Published</Button>
-                    )}
-                    </span>)
-                }
+                    </>) : (<Button color="primary" variant="outlined">Published</Button>)}</span>)}
                     {course.published && (<div>
                         <span className={classes.statSpan}><PeopleIcon /> {Stats.totalEnrolled} enrolled </span>
                         <span className={classes.statSpan}><CompletedIcon /> {Stats.totaCompleted} completed </span>
-                    </div>)}
-                </>
-                }
-                    />
+                    </div>)}</>}/>
                     <div className={classes.flex}>
                         <CardMedia className={classes.media} image={imageUrl} title={course.name} />
                         <div className={classes.details}>
@@ -152,26 +189,21 @@ export default function Course ({match}) {
                    auth.isAuthenticated().user && auth.isAuthenticated().user._id == course.instructor._id && !course.published &&
                       (<span className={classes.action}>
                         <NewLesson courseId={course._id} addLesson={addLesson}/>
-                      </span>)
-                  }
-                      />
+                      </span>)}/>
                       <List>
                       {course.lessons && course.lessons.map((lesson, index) => {
                           return(<span key={index}>
                           <ListItem>
                           <ListItemAvatar>
                               <Avatar>
-                              {index+1}
+                                {index+1}
                               </Avatar>
                           </ListItemAvatar>
                           <ListItemText
-                              primary={lesson.title}
-                          />
+                              primary={lesson.title}/>
                           </ListItem>
                           <Divider variant="inset" component="li" />
-                          </span>)
-                      }
-                      )}
+                          </span>)})}
                       </List>
                       </div>
                     </Card>

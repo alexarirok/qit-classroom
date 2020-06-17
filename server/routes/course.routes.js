@@ -17,5 +17,6 @@ router.param('courseId', courseCtrl.courseByID)
 router.route('/api/courses/:courseId/lesson/new').put(authCtrl.requireSignin, courseCtrl.isInstructor, courseCtrl.newLesson)
 router.route('/api/courses/:courseId').put(authCtrl.requireSignin, courseCtrl.isInstructor, courseCtrl.update)
 router.route('/api/courses/:courseId').delete(authCtrl.requireSignin, courseCtrl.isInstructor, courseCtrl.remove)
+router.route('/api/courses/published').get(courseCtrl.listPublished)
 
 export default router

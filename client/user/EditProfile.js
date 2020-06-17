@@ -10,7 +10,8 @@ import { makeStyles } from '@material-ui/core/styles'
 import auth from './../auth/auth-helper'
 import {read, update} from './api-user.js'
 import {Redirect} from 'react-router-dom'
-import { FormControlLabel } from '@material-ui/core'
+import FormControlLabel from '@material-ui/core/FormControlLabel'
+import Switch from '@material-ui/core/Switch'
 
 const useStyles = makeStyles(theme => ({
   card: {
@@ -46,7 +47,8 @@ export default function EditProfile({ match }) {
     email: '',
     open: false,
     error: '',
-    redirectToProfile: false
+    redirectToProfile: false,
+    educator: false
   })
   const jwt = auth.isAuthenticated()
 
@@ -60,7 +62,7 @@ export default function EditProfile({ match }) {
       if (data && data.error) {
         setValues({...values, error: data.error})
       } else {
-        setValues({...values, name: data.name, email: data.email})
+        setValues({...values, name: data.name, email: data.email, educator: data.educator})
       }
     })
     return function cleanup(){
@@ -70,12 +72,11 @@ export default function EditProfile({ match }) {
   }, [match.params.userId])
 
   const clickSubmit = () => {
-    const jwt = auth.isAuthenticated()
     const user = {
-      name: this.state.name || undefined,
-      email: this.state.email || undefined,
-      password: this.state.password || undefined,
-      educator: this.state.educator || undefined
+      name: values.name || undefined,
+      email: values.email || undefined,
+      password: values.password || undefined,
+      educator: values.educator 
     }
     update({
       userId: match.params.userId
@@ -83,7 +84,7 @@ export default function EditProfile({ match }) {
       t: jwt.token
     }, user).then((data) => {
       if (data && data.error) {
-        this.setState({ error: data.error})
+        setValues({ ...values, error: data.error})
       } else {
         auth.updateUser(data, () => {
           setValues({...values, userId: data._id, redirectToProfile: true})
@@ -95,6 +96,9 @@ export default function EditProfile({ match }) {
     setValues({...values, [name]: event.target.value})
   }
 
+  const handleCheck = (event, checked) => {
+    setValues({...values, educator: checked})
+  }
     if (values.redirectToProfile) {
       return (<Redirect to={'/user/' + values.userId}/>)
     }
