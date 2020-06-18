@@ -24,18 +24,19 @@ const CourseSchema = new mongoose.Schema({
         type: String,
         required: 'Category is required'
     },
-    published: {
-        type: Boolean,
-        default: false
-    },
-    instructor: {
-        type: mongoose.Schema.ObjectId,
-        ref: 'User'
-    },
     updated: Date,
     created: {
         type: Date,
         default: Date.now
+    },
+    
+    instructor: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User'
+    },
+    published: {
+        type: Boolean,
+        default: false
     },
     lessons: [LessonSchema]
 })

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import auth from "../auth/auth-helper"
-import { read, complete } from "fs"
-import { CardContent, Drawer, List, ListItem, Divider, ListSubheader, Avatar, ListItemSecondaryAction, ListItemAvatar,
+import { read, complete } from './api-enrollment.js'
+import { CardContent, makeStyles, Drawer, List, ListItem, Divider, ListSubheader, Avatar, ListItemSecondaryAction, ListItemAvatar,
         ListItemIcon,CardHeader, Typography, Card, CardActions, CardMedia, Button } from "@material-ui/core"
 import Info from '@material-ui/icons/Info'
 import CheckCircle from '@material-ui/icons/CheckCircle'

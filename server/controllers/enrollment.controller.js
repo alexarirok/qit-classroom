@@ -1,24 +1,6 @@
 import Enrollment from '../models/enrollment.model'
 import dbErrorHandler from './../helpers/dbErrorHandler'
 
-const findEnrollment = async (req, res, next) => {
-    try{
-        let enrollments = await Enrollment.find({
-            course: req.course._id,
-            student: req.auth._id
-        })
-        if(enrollments.length == 0){
-            next()
-        } else {
-            res.json(enrollments[0])
-        }
-    }catch (err) {
-        return res.status(400).json({
-            error: dbErrorHandler.getErrorMessage(err)
-        })
-    }
-}
-
 const create = async (req, res) => {
     let newEnrollment = {
         course: req.course,
@@ -41,8 +23,8 @@ const create = async (req, res) => {
 const enrollmentByID = async (req, res, next, id) => {
     try {
         let enrollment = await (await Enrollment.findById(id))
-                                .populate({path: 'course', populate: {path:'instructor'}})
-                                .populate('student', '_id name')
+                                                .populate({path: 'course', populate: {path:'instructor'}})
+                                                .populate('student', '_id name')
         if (!enrollment)
             return res.status('400').json({
                 error: "Enrollment not found"
@@ -52,6 +34,37 @@ const enrollmentByID = async (req, res, next, id) => {
     } catch (err) {
         return res.status('400').json({
             error: "Could not retrieve enrollment"
+        })
+    }
+}
+
+const read = (req, res) => {
+    return res.json(req.enrollment)
+}
+
+const complete = async (req, res) => {
+    let updatedData = {}
+    updatedData['lessonStatus.$.complete']= req.body.complete
+    updatedData.updated = Date.now()
+    if(req.body.courseCompleted) updatedData.completed = req.body.courseCompleted
+    try {
+        let enrollment = await Enrollment.updateOne({'lessonStatus._id': req.body.lessonStatusId}, {'$set': updatedData})
+            res.json(enrollment)
+    } catch (err) {
+        return res.status(400).json({
+            error: dbErrorHandler.getErrorMessage(err)
+        })
+    }
+}
+
+const remove = async (req, res) => {
+    try {
+        let enrollment = req.enrollment
+        let deletedEnrollment = await enrollment.remove()
+        res.json(deletedEnrollment)
+    } catch(err) {
+        return res.status(400).json({
+            error: dbErrorHandler.getErrorMessage(err)
         })
     }
 }
@@ -66,28 +79,7 @@ const isStudent = (req, res, next) => {
     next()
  }
 
-const read = (req, res) => {
-    return res.json(req.enrollment)
-}
-
-const complete = async (req, res) => {
-    let updatedData = {}
-    updatedData['lessonStatus.$.complete']= req.body.complete
-    updatedData.updated = Date.now()
-    if(req.body.courseCompleted)updatedData.completed = req.body.courseCompleted
-    try {
-        let enrollment = await Enrollment.updateOne({
-            'lessonStatus._id': req.body.lessonStatusId},
-            {'$set': updatedData})
-            res.json(enrollment)
-    } catch (err) {
-        return res.status(400).json({
-            error: dbErrorHandler.getErrorMessage(err)
-        })
-    }
-}
-
-const listEnrolled = async (req, res) => {
+ const listEnrolled = async (req, res) => {
     try {
         let enrollments = await Enrollment.find({student: req.auth._id}).sort({'completed': 1}).populate('course', '_id name category')
         res.json(enrollments)
@@ -98,6 +90,25 @@ const listEnrolled = async (req, res) => {
         })
     }
 }
+
+const findEnrollment = async (req, res, next) => {
+    try{
+        let enrollments = await Enrollment.find({
+            course: req.course._id,
+            student: req.auth._id
+        })
+        if(enrollments.length == 0){
+            next()
+        } else {
+            res.json(enrollments[0])
+        }
+    }catch (err) {
+        return res.status(400).json({
+            error: dbErrorHandler.getErrorMessage(err)
+        })
+    }
+}
+
 
 const enrollmentStats = async (req, res) => {
     try {
@@ -111,4 +122,4 @@ const enrollmentStats = async (req, res) => {
         })
     }
 }
-export default {enrollmentStats, listEnrolled, complete, read, isStudent, create, findEnrollment, enrollmentByID}
+export default {remove, enrollmentStats, listEnrolled, complete, read, isStudent, create, findEnrollment, enrollmentByID}
