@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "An online studying platform",
   "main": "./dist/server.generated.js",
+  "homepage": "https://github.com/alexarirok/qit-classroom",
   "repository": "https://github.com/alexarirok/qit-classroom.git",
   "author": "alexarirok <akorir233@gmail.com>",
   "license": "MIT",

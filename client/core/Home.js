@@ -1,12 +1,11 @@
 import React, {useState, useEffect} from 'react'
 import { makeStyles } from '@material-ui/core/styles'
 import Card from '@material-ui/core/Card'
+import listPublished from './../course/api-course.js'
+import {listEnrolled} from './../enrollment/api-enrollment'
 import Typography from '@material-ui/core/Typography'
-import Divider from '@material-ui/core/Divider'
-import Courses from './../course/Courses'
 import auth from './../auth/auth-helper'
-import listPublished from './../course/api-course'
-import {listEnrolled, listCompleted} from './../enrollment/api-enrollment'
+import Courses from './../course/Courses'
 import Enrollments from '../enrollment/Enrollments'
 
 
@@ -70,7 +69,7 @@ export default function Home(){
   const jwt = auth.isAuthenticated()
   const [courses, setCourses] = useState([])
   const [enrolled, setEnrolled] = useState([])
-  useEffect (() => {
+  useEffect(() => {
     const abortController = new AbortController()
     const signal = abortController.signal
     listEnrolled({t: jwt.token}, signal).then((data) => {
@@ -80,41 +79,42 @@ export default function Home(){
         setEnrolled(data)
       }
     })
-    return function cleanup() {
+    return function cleanup(){
       abortController.abort()
     }
   }, [])
   useEffect(() => {
     const abortController = new AbortController()
-    const signal = abortController.signal
+    const signal = abortController.signal()
     listPublished(signal).then((data) => {
       if (data.error) {
         console.log(data.error)
       } else {
-        setCourse(data)
+        setCourses(data)
       }
     })
-    return function cleanup() {
+    return function cleanup(){
       abortController.abort()
     }
   }, [])
     return (<div className={classes.extraTop}>
       {auth.isAuthenticated().user && (
-        <Card className={`${classes.card} ${classes.enrolledCard}`}>
-          <Typography variant="h6" component="h2" className={classes.enrolledTitle}>
-              Courses you are enrolled in
-          </Typography>
-          {enrolled.length !=0 ? (<Enrollments enrollments={enrolled}/>)
-                                :(<Typography variant="body1" className={classes.noTitle}>No courses enrolled</Typography>) }
-        </Card>
+      <Card className={`${classes.card} ${classes.enrolledCard}`}>
+        <Typography variant="h6" component="h2" className={classes.enrolledTitle}>
+            Courses you are enrolled in
+        </Typography>
+        {enrolled.length != 0 ? (<Enrollments enrollments={enrolled}/>)
+                             : (<Typography variant="body1" className={classes.noTitle}>No courses.</Typography>)
+        }
+      </Card>
       )}
       <Card className={classes.card}>
         <Typography variant="h5" component="h2">
-          All Courses
+            All Courses
         </Typography>
-        {(courses.length !=0 && courses.length != enrolled.length) ? (<Courses courses={courses} common={enrolled}/>)
-                            : (<Typography variant="body1" className={classes.noTitle}>No new course</Typography>)
-          }
+        {(courses.length != 0 && courses.length != enrolled.length) ? (<Courses courses={courses} common={enrolled}/>) 
+                             : (<Typography variant="body1" className={classes.noTitle}>No new course</Typography>)
+        }
       </Card>
     </div>
     )
